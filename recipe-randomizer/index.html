@@ -1,0 +1,1846 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>今日菜谱</title>
+  <style>
+    :root {
+      --bg: #f7f4ee;
+      --panel: #fffdf8;
+      --ink: #29231e;
+      --muted: #756d63;
+      --line: #ded5c8;
+      --green: #4d7d57;
+      --red: #a9493e;
+      --blue: #476d87;
+      --gold: #c98c32;
+      --shadow: 0 16px 38px rgba(58, 42, 25, 0.12);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 18% 8%, rgba(201, 140, 50, 0.16), transparent 24rem),
+        linear-gradient(145deg, #f8f1e8 0%, #eef3ec 48%, #f6efe5 100%);
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    .app {
+      width: min(1180px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 24px 0 32px;
+    }
+
+    header {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: end;
+      padding: 14px 0 22px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(30px, 5vw, 54px);
+      line-height: 1.02;
+      letter-spacing: 0;
+    }
+
+    .date-chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 40px;
+      padding: 0 14px;
+      border: 1px solid rgba(41, 35, 30, 0.12);
+      border-radius: 999px;
+      background: rgba(255, 253, 248, 0.78);
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .header-meta {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: end;
+      gap: 8px;
+    }
+
+    .date-chip.cloud {
+      color: #315e3c;
+      border-color: rgba(77, 125, 87, 0.28);
+    }
+
+    .date-chip.local {
+      color: #8a5a20;
+      border-color: rgba(201, 140, 50, 0.34);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(320px, 0.95fr) minmax(380px, 1.35fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .section {
+      background: rgba(255, 253, 248, 0.84);
+      border: 1px solid rgba(117, 109, 99, 0.24);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .form-panel,
+    .today-panel {
+      padding: 18px;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 20px;
+      line-height: 1.2;
+    }
+
+    .field {
+      display: grid;
+      gap: 7px;
+      margin-bottom: 13px;
+    }
+
+    label {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fffaf3;
+      color: var(--ink);
+      outline: none;
+      padding: 11px 12px;
+    }
+
+    textarea {
+      min-height: 104px;
+      resize: vertical;
+      line-height: 1.55;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(201, 140, 50, 0.16);
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+      margin-top: 16px;
+    }
+
+    .primary,
+    .secondary,
+    .ghost {
+      min-height: 42px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      padding: 0 14px;
+      font-size: 14px;
+      line-height: 1;
+      transition: transform 140ms ease, opacity 140ms ease, background 140ms ease;
+    }
+
+    .primary {
+      background: var(--ink);
+      color: #fffdf8;
+      font-weight: 700;
+    }
+
+    .secondary {
+      background: #efe5d6;
+      color: var(--ink);
+      border: 1px solid var(--line);
+      cursor: pointer;
+    }
+
+    .ghost {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid transparent;
+    }
+
+    .primary:hover,
+    .secondary:hover,
+    .ghost:hover {
+      transform: translateY(-1px);
+    }
+
+    .hero-food {
+      min-height: 172px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.7);
+      background:
+        linear-gradient(180deg, rgba(41, 35, 30, 0.08), rgba(41, 35, 30, 0.58)),
+        url("https://images.unsplash.com/photo-1543352634-a1c51d9f1fa7?auto=format&fit=crop&w=1100&q=80") center/cover;
+      display: flex;
+      align-items: end;
+      padding: 16px;
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+
+    .hero-food strong {
+      color: white;
+      font-size: 24px;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.34);
+    }
+
+    .random-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .pick {
+      min-height: 178px;
+      border-radius: 8px;
+      background: #fffaf3;
+      border: 1px solid var(--line);
+      padding: 14px;
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      gap: 9px;
+      overflow: hidden;
+    }
+
+    .tag {
+      width: fit-content;
+      max-width: 100%;
+      min-height: 28px;
+      display: inline-flex;
+      align-items: center;
+      padding: 0 10px;
+      border-radius: 999px;
+      color: white;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .tag.vegetable {
+      background: var(--green);
+    }
+
+    .tag.meat {
+      background: var(--red);
+    }
+
+    .tag.soup {
+      background: var(--blue);
+    }
+
+    .pick h3 {
+      margin: 0;
+      font-size: 22px;
+      line-height: 1.15;
+      overflow-wrap: anywhere;
+    }
+
+    .pick p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.45;
+      display: -webkit-box;
+      -webkit-line-clamp: 4;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .empty {
+      color: var(--muted);
+      border-style: dashed;
+      align-content: center;
+    }
+
+    .library {
+      margin-top: 18px;
+      padding: 16px 18px 18px;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .library-tools {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: end;
+    }
+
+    .file-input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 6px;
+      padding: 4px;
+      border-radius: 8px;
+      background: #eee5d8;
+      border: 1px solid var(--line);
+    }
+
+    .tab {
+      min-height: 34px;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--muted);
+      padding: 0 12px;
+      font-weight: 700;
+    }
+
+    .tab.active {
+      background: var(--panel);
+      color: var(--ink);
+      box-shadow: 0 2px 8px rgba(58, 42, 25, 0.1);
+    }
+
+    .recipe-list {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .recipe-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fffaf3;
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+      min-height: 190px;
+    }
+
+    .recipe-card h3 {
+      margin: 0;
+      font-size: 19px;
+      line-height: 1.2;
+      overflow-wrap: anywhere;
+    }
+
+    .recipe-card .tag {
+      width: 48px;
+      height: 28px;
+      min-height: 28px;
+      justify-content: center;
+      padding: 0;
+      font-size: 13px;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .recipe-card small {
+      color: var(--muted);
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+
+    .recipe-text {
+      white-space: pre-line;
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 8px;
+      align-self: end;
+    }
+
+    .icon-button {
+      width: 38px;
+      height: 38px;
+      display: inline-grid;
+      place-items: center;
+      border-radius: 6px;
+      border: 1px solid var(--line);
+      background: #f4eadb;
+      color: var(--ink);
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .message {
+      min-height: 22px;
+      color: var(--green);
+      font-size: 14px;
+    }
+
+    .image-preview {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 2px;
+    }
+
+    .image-tile {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      overflow: hidden;
+      background: #efe5d6;
+    }
+
+    .image-tile img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .image-tile button {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      background: rgba(41, 35, 30, 0.78);
+      color: white;
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .step-images {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .step-images img {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      object-fit: contain;
+      border-radius: 6px;
+      border: 1px solid var(--line);
+      background: #efe5d6;
+    }
+
+    .step-images:has(img:only-child) {
+      display: flex;
+      justify-content: center;
+    }
+
+    .step-images:has(img:only-child) img {
+      width: min(100%, 360px);
+      max-height: 620px;
+      aspect-ratio: auto;
+    }
+
+    .recipe-card .step-images,
+    .recipe-card .step-images:has(img:only-child) {
+      display: grid;
+      grid-template-columns: repeat(4, 56px);
+      justify-content: start;
+      gap: 6px;
+      max-width: 100%;
+    }
+
+    .recipe-card .step-images img,
+    .recipe-card .step-images:has(img:only-child) img {
+      width: 56px;
+      height: 56px;
+      aspect-ratio: auto;
+      object-fit: cover;
+      max-height: none;
+    }
+
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .random-grid,
+      .recipe-list {
+        grid-template-columns: 1fr;
+      }
+
+      header {
+        grid-template-columns: 1fr;
+        align-items: start;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .app {
+        width: min(100% - 18px, 1180px);
+        padding-top: 12px;
+      }
+
+      .form-panel,
+      .today-panel,
+      .library {
+        padding: 14px;
+      }
+
+      .actions,
+      .section-title {
+        grid-template-columns: 1fr;
+      }
+
+      .actions {
+        display: grid;
+      }
+
+      .primary,
+      .secondary,
+      .ghost {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <div>
+        <h1>今日菜谱</h1>
+      </div>
+      <div class="header-meta">
+        <div class="date-chip" id="dateChip"></div>
+          <div class="date-chip local" id="storageChip">本地缓存</div>
+      </div>
+    </header>
+
+    <div class="layout">
+      <section class="section form-panel" aria-labelledby="formTitle">
+        <div class="section-title">
+          <h2 id="formTitle">记录做法</h2>
+          <button class="ghost" id="resetForm" type="button">清空</button>
+        </div>
+
+        <form id="recipeForm">
+          <input type="hidden" id="recipeId">
+          <div class="field">
+            <label for="name">菜名</label>
+            <input id="name" required maxlength="40" autocomplete="off" placeholder="番茄炒蛋">
+          </div>
+          <div class="field">
+            <label for="category">分类</label>
+            <select id="category" required>
+              <option value="vegetable">蔬菜</option>
+              <option value="meat">肉菜</option>
+              <option value="soup">汤</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="ingredients">用料</label>
+            <textarea id="ingredients" required placeholder="番茄、鸡蛋、葱、盐"></textarea>
+          </div>
+          <div class="field">
+            <label for="steps">做法</label>
+            <textarea id="steps" required placeholder="1. 鸡蛋打散煎熟&#10;2. 番茄炒出汁&#10;3. 合炒调味"></textarea>
+          </div>
+          <div class="field">
+            <label for="stepImages">图片步骤</label>
+            <input id="stepImages" type="file" accept="image/*" multiple>
+            <div class="image-preview" id="imagePreview"></div>
+          </div>
+          <div class="actions">
+            <button class="primary" id="submitButton" type="submit">保存菜谱</button>
+            <span class="message" id="message"></span>
+          </div>
+        </form>
+      </section>
+
+      <section class="section today-panel" aria-labelledby="todayTitle">
+        <div class="hero-food">
+          <strong>蔬菜、肉菜、汤，一次配齐</strong>
+        </div>
+        <div class="section-title">
+          <h2 id="todayTitle">今天吃什么</h2>
+          <div class="library-tools">
+            <button class="secondary" id="downloadToday" type="button">下载长图</button>
+            <button class="secondary" id="randomize" type="button">重新抽取</button>
+          </div>
+        </div>
+        <div class="random-grid" id="todayGrid"></div>
+      </section>
+    </div>
+
+    <section class="section library" aria-labelledby="libraryTitle">
+      <div class="toolbar">
+        <h2 id="libraryTitle">菜谱库</h2>
+        <div class="library-tools">
+          <button class="secondary" id="exportRecipes" type="button">导出菜谱</button>
+          <label class="secondary" for="recipeUpload">上传菜谱</label>
+          <input class="file-input" id="recipeUpload" type="file" accept=".json,.csv,application/json,text/csv">
+          <div class="tabs" id="tabs" role="tablist" aria-label="菜谱分类">
+            <button class="tab active" type="button" data-filter="all">全部</button>
+            <button class="tab" type="button" data-filter="vegetable">蔬菜</button>
+            <button class="tab" type="button" data-filter="meat">肉菜</button>
+            <button class="tab" type="button" data-filter="soup">汤</button>
+          </div>
+        </div>
+      </div>
+      <div class="recipe-list" id="recipeList"></div>
+    </section>
+  </main>
+
+  <script src="./config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const STORAGE_KEY = "daily-recipe-app-v1";
+    const DAILY_KEY = "daily-recipe-selection-v1";
+    const LOCAL_DB_NAME = "daily-recipe-app-db";
+    const LOCAL_DB_VERSION = 1;
+    const LOCAL_DB_STORE = "recipe-state";
+    const LOCAL_DB_RECIPES_KEY = "recipes";
+    const LOCAL_DB_DELETED_SEEDS_KEY = "deleted-seed-ids";
+    const DELETED_SEEDS_KEY = "daily-recipe-deleted-seeds-v1";
+    const categories = {
+      vegetable: { label: "蔬菜", className: "vegetable" },
+      meat: { label: "肉菜", className: "meat" },
+      soup: { label: "汤", className: "soup" }
+    };
+
+    const seedRecipes = [
+      {
+        id: "11111111-1111-4111-8111-111111111101",
+        name: "蒜蓉菜心",
+        category: "vegetable",
+        ingredients: "广东菜心、蒜、盐、白糖、蚝油、食用油",
+        steps: "菜心洗净，粗梗处对半切开。水开后加少量盐和油，放菜心焯至断生。热锅爆香蒜末，加蚝油、少量清水、盐和白糖煮开，淋在菜心上。"
+      },
+      {
+        id: "11111111-1111-4111-8111-111111111102",
+        name: "白灼生菜",
+        category: "vegetable",
+        ingredients: "生菜、蒜、生抽、蚝油、白糖、食用油",
+        steps: "生菜洗净沥干。水开后快速烫熟捞出摆盘。蒜末爆香，加入生抽、蚝油、白糖和少量清水煮开，淋在生菜上。"
+      },
+      {
+        id: "11111111-1111-4111-8111-111111111103",
+        name: "客家酿豆腐",
+        category: "meat",
+        ingredients: "老豆腐、猪肉末、香菇、葱、盐、生抽、蚝油、淀粉",
+        steps: "肉末加入香菇碎、葱、盐、生抽和淀粉拌匀。豆腐切块挖小洞，填入肉馅。平底锅煎至两面金黄，加蚝油、生抽和少量清水焖熟收汁。"
+      },
+      {
+        id: "11111111-1111-4111-8111-111111111104",
+        name: "梅菜扣肉",
+        category: "meat",
+        ingredients: "五花肉、梅干菜、姜、葱、生抽、老抽、料酒、冰糖",
+        steps: "五花肉煮至八成熟，抹老抽后煎皮上色，切片。梅干菜泡洗后炒香，加生抽和冰糖调味。肉片码碗，铺梅菜，上锅蒸至软糯后倒扣装盘。"
+      },
+      {
+        id: "11111111-1111-4111-8111-111111111105",
+        name: "豉汁蒸排骨",
+        category: "meat",
+        ingredients: "排骨、豆豉、蒜、姜、生抽、蚝油、淀粉、食用油",
+        steps: "排骨泡去血水后沥干。加入豆豉、蒜末、姜末、生抽、蚝油、淀粉和油抓匀腌制。铺盘后大火蒸约十五到二十分钟。"
+      },
+      {
+        id: "11111111-1111-4111-8111-111111111106",
+        name: "白切鸡",
+        category: "meat",
+        ingredients: "走地鸡、姜、葱、盐、料酒、花生油、生抽",
+        steps: "锅中加姜葱和料酒煮开，放鸡浸煮至熟后过凉，斩件。姜葱剁碎，加热花生油、盐和少量生抽调成蘸料。"
+      },
+      {
+        id: "11111111-1111-4111-8111-111111111107",
+        name: "客家盐焗鸡",
+        category: "meat",
+        ingredients: "鸡、盐焗鸡粉、姜、葱、食用油",
+        steps: "鸡擦干后用盐焗鸡粉和少量油抹匀，腌制半小时以上。放入姜葱，蒸熟或用电饭煲焗熟，稍凉后手撕或斩件。"
+      },
+      {
+        id: "11111111-1111-4111-8111-111111111108",
+        name: "上汤娃娃菜",
+        category: "vegetable",
+        ingredients: "娃娃菜、皮蛋、咸蛋、蒜、高汤或清水、盐",
+        steps: "娃娃菜切开焯水。蒜粒煎香，加入皮蛋、咸蛋和高汤煮开，放娃娃菜煮软，加盐调味。"
+      },
+      {
+        id: "11111111-1111-4111-8111-111111111109",
+        name: "客家萝卜丸",
+        category: "vegetable",
+        ingredients: "白萝卜、红薯粉、虾米、香菇、葱、盐、白胡椒",
+        steps: "白萝卜擦丝挤去部分水分。加入泡发虾米、香菇丁、葱、盐、白胡椒和红薯粉拌成团，捏成丸子蒸熟。"
+      },
+      {
+        id: "11111111-1111-4111-8111-111111111110",
+        name: "老火靓汤",
+        category: "soup",
+        ingredients: "猪骨、玉米、胡萝卜、马蹄、蜜枣、姜、盐",
+        steps: "猪骨焯水洗净。与玉米、胡萝卜、马蹄、蜜枣和姜片一起入锅，加足量水小火煲一到两小时，最后加盐。"
+      },
+      {
+        id: "11111111-1111-4111-8111-111111111111",
+        name: "冬瓜薏米排骨汤",
+        category: "soup",
+        ingredients: "排骨、冬瓜、薏米、姜、盐",
+        steps: "薏米提前浸泡，排骨焯水。排骨、薏米和姜片先煲四十分钟，加入冬瓜继续煲至软，最后加盐。"
+      },
+      {
+        id: "11111111-1111-4111-8111-111111111112",
+        name: "客家猪肚鸡汤",
+        category: "soup",
+        ingredients: "猪肚、鸡、白胡椒粒、姜、枸杞、盐",
+        steps: "猪肚用盐和淀粉反复搓洗后焯水切条，鸡斩块焯水。加入白胡椒粒和姜片煲至汤色浓白，出锅前加枸杞和盐。"
+      }
+    ];
+
+    const appConfig = window.RECIPE_APP_CONFIG || {};
+    const hasSupabaseConfig = Boolean(
+      appConfig.supabaseUrl &&
+      appConfig.supabaseAnonKey &&
+      !appConfig.supabaseUrl.includes("YOUR_") &&
+      !appConfig.supabaseAnonKey.includes("YOUR_")
+    );
+    const supabaseClient = hasSupabaseConfig && window.supabase
+      ? window.supabase.createClient(appConfig.supabaseUrl, appConfig.supabaseAnonKey)
+      : null;
+    const store = supabaseClient ? createSupabaseStore(supabaseClient) : createLocalStore();
+
+    let recipes = [];
+    let activeFilter = "all";
+    let currentImageSteps = [];
+
+    const form = document.querySelector("#recipeForm");
+    const recipeId = document.querySelector("#recipeId");
+    const nameInput = document.querySelector("#name");
+    const categoryInput = document.querySelector("#category");
+    const ingredientsInput = document.querySelector("#ingredients");
+    const stepsInput = document.querySelector("#steps");
+    const stepImagesInput = document.querySelector("#stepImages");
+    const imagePreview = document.querySelector("#imagePreview");
+    const submitButton = document.querySelector("#submitButton");
+    const message = document.querySelector("#message");
+    const todayGrid = document.querySelector("#todayGrid");
+    const recipeList = document.querySelector("#recipeList");
+    const dateChip = document.querySelector("#dateChip");
+    const storageChip = document.querySelector("#storageChip");
+    const recipeUpload = document.querySelector("#recipeUpload");
+    const exportRecipesButton = document.querySelector("#exportRecipes");
+
+    dateChip.textContent = new Intl.DateTimeFormat("zh-CN", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      weekday: "long"
+    }).format(new Date());
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const currentId = recipeId.value || crypto.randomUUID();
+      const item = {
+        id: currentId,
+        name: nameInput.value.trim(),
+        category: categoryInput.value,
+        ingredients: ingredientsInput.value.trim(),
+        steps: stepsInput.value.trim(),
+        image_steps: currentImageSteps
+      };
+
+      if (!item.name || !item.ingredients || !item.steps) return;
+
+      submitButton.disabled = true;
+      try {
+        const existingIndex = recipes.findIndex((recipe) => recipe.id === currentId);
+        await store.save(item);
+        if (existingIndex >= 0) {
+          recipes[existingIndex] = item;
+          clearForm();
+          showMessage("已更新");
+        } else {
+          recipes.unshift(item);
+          clearForm();
+          showMessage("已保存");
+        }
+        render();
+      } catch (error) {
+        showMessage(error.message || "保存失败");
+      } finally {
+        submitButton.disabled = false;
+      }
+    });
+
+    document.querySelector("#resetForm").addEventListener("click", clearForm);
+    document.querySelector("#randomize").addEventListener("click", randomizeToday);
+    document.querySelector("#downloadToday").addEventListener("click", downloadTodayImage);
+    exportRecipesButton.addEventListener("click", exportRecipes);
+
+    stepImagesInput.addEventListener("change", async (event) => {
+      const files = Array.from(event.target.files || []);
+      if (!files.length) return;
+      try {
+        const images = await Promise.all(files.map(readCompressedImage));
+        currentImageSteps = [...currentImageSteps, ...images].slice(0, 9);
+        renderImagePreview();
+        showMessage(currentImageSteps.length >= 9 ? "最多保留 9 张步骤图" : "已添加步骤图");
+      } catch (error) {
+        showMessage(error.message || "图片读取失败");
+      } finally {
+        stepImagesInput.value = "";
+      }
+    });
+
+    imagePreview.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-remove-image]");
+      if (!button) return;
+      currentImageSteps.splice(Number(button.dataset.removeImage), 1);
+      renderImagePreview();
+    });
+
+    recipeUpload.addEventListener("change", async (event) => {
+      const [file] = event.target.files;
+      if (!file) return;
+
+      try {
+        const importedRecipes = await parseRecipeFile(file);
+        if (!importedRecipes.length) {
+          showMessage("没有可导入的菜谱");
+          return;
+        }
+        await store.saveMany(importedRecipes);
+        recipes = await store.list();
+        pruneDailySelection();
+        render();
+        showMessage(`已上传 ${importedRecipes.length} 道菜`);
+      } catch (error) {
+        showMessage(error.message || "上传失败");
+      } finally {
+        recipeUpload.value = "";
+      }
+    });
+
+    document.querySelector("#tabs").addEventListener("click", (event) => {
+      const button = event.target.closest("[data-filter]");
+      if (!button) return;
+      activeFilter = button.dataset.filter;
+      document.querySelectorAll(".tab").forEach((tab) => {
+        tab.classList.toggle("active", tab.dataset.filter === activeFilter);
+      });
+      renderRecipes();
+    });
+
+    recipeList.addEventListener("click", (event) => {
+      const editButton = event.target.closest("[data-edit]");
+      const deleteButton = event.target.closest("[data-delete]");
+
+      if (editButton) {
+        editRecipe(editButton.dataset.edit);
+      }
+
+      if (deleteButton) {
+        deleteRecipe(deleteButton.dataset.delete);
+      }
+    });
+
+    todayGrid.addEventListener("click", (event) => {
+      const editButton = event.target.closest("[data-edit]");
+      if (editButton) editRecipe(editButton.dataset.edit);
+    });
+
+    async function deleteRecipe(id) {
+      try {
+        await store.remove(id);
+        recipes = recipes.filter((item) => item.id !== id);
+        pruneDailySelection();
+        render();
+      } catch (error) {
+        showMessage(error.message || "删除失败");
+      }
+    }
+
+    function createLocalStore() {
+      return {
+        mode: "local",
+        async list() {
+          return loadLocalRecipes();
+        },
+        async save(item) {
+          const existing = await loadLocalRecipes();
+          const index = existing.findIndex((recipe) => recipe.id === item.id);
+          if (index >= 0) {
+            existing[index] = item;
+          } else {
+            existing.unshift(item);
+          }
+          await forgetDeletedSeedIds([item.id]);
+          await persistLocalRecipes(existing);
+        },
+        async saveMany(items) {
+          const existing = await loadLocalRecipes();
+          const merged = [...items, ...existing];
+          const unique = Array.from(new Map(merged.map((item) => [item.id, item])).values());
+          await forgetDeletedSeedIds(items.map((item) => item.id));
+          await persistLocalRecipes(unique);
+        },
+        async remove(id) {
+          const next = (await loadLocalRecipes()).filter((recipe) => recipe.id !== id);
+          if (isSeedRecipeId(id)) await rememberDeletedSeedId(id);
+          await persistLocalRecipes(next);
+        },
+        subscribe() {}
+      };
+    }
+
+    function createSupabaseStore(client) {
+      return {
+        mode: "cloud",
+        async list() {
+          const { data, error } = await client
+            .from("recipes")
+            .select("id,name,category,ingredients,steps,image_steps,created_at")
+            .order("created_at", { ascending: false });
+          if (error) throw error;
+          return data || [];
+        },
+        async save(item) {
+          const { error } = await client
+            .from("recipes")
+            .upsert(item, { onConflict: "id" });
+          if (error) throw error;
+        },
+        async saveMany(items) {
+          const { error } = await client
+            .from("recipes")
+            .upsert(items, { onConflict: "id" });
+          if (error) throw error;
+        },
+        async remove(id) {
+          const { error } = await client
+            .from("recipes")
+            .delete()
+            .eq("id", id);
+          if (error) throw error;
+        },
+        subscribe(onChange) {
+          return client
+            .channel("shared-recipes")
+            .on("postgres_changes", { event: "*", schema: "public", table: "recipes" }, onChange)
+            .subscribe();
+        }
+      };
+    }
+
+    async function loadLocalRecipes() {
+      const deletedSeedIds = await loadDeletedSeedIds();
+      try {
+        const indexedRecipes = await readIndexedRecipes();
+        if (indexedRecipes) return mergeSeedRecipes(indexedRecipes, deletedSeedIds);
+      } catch {
+        // Fall through to the legacy localStorage cache.
+      }
+
+      const legacyRecipes = readLegacyLocalRecipes();
+      const merged = mergeSeedRecipes(legacyRecipes || [], deletedSeedIds);
+      try {
+        await persistLocalRecipes(merged);
+      } catch {
+        // Loading should still work even if the browser refuses persistence.
+      }
+      return merged;
+    }
+
+    function mergeSeedRecipes(existing, deletedSeedIds = []) {
+      const byId = new Map(existing.map((recipe) => [recipe.id, recipe]));
+      const deletedSeeds = new Set(deletedSeedIds);
+      seedRecipes.forEach((recipe) => {
+        if (!deletedSeeds.has(recipe.id) && !byId.has(recipe.id)) {
+          byId.set(recipe.id, recipe);
+        }
+      });
+      return Array.from(byId.values());
+    }
+
+    function isSeedRecipeId(id) {
+      return seedRecipes.some((recipe) => recipe.id === id);
+    }
+
+    async function loadDeletedSeedIds() {
+      try {
+        const indexedIds = await readIndexedDeletedSeedIds();
+        if (indexedIds) return indexedIds;
+      } catch {
+        // Fall through to localStorage.
+      }
+      try {
+        const parsed = JSON.parse(localStorage.getItem(DELETED_SEEDS_KEY) || "[]");
+        return Array.isArray(parsed) ? parsed.filter((id) => typeof id === "string") : [];
+      } catch {
+        return [];
+      }
+    }
+
+    async function rememberDeletedSeedId(id) {
+      const next = Array.from(new Set([...(await loadDeletedSeedIds()), id]));
+      await persistDeletedSeedIds(next);
+    }
+
+    async function forgetDeletedSeedIds(ids) {
+      const seedIds = ids.filter(isSeedRecipeId);
+      if (!seedIds.length) return;
+      const deleted = await loadDeletedSeedIds();
+      const next = deleted.filter((id) => !seedIds.includes(id));
+      if (next.length !== deleted.length) await persistDeletedSeedIds(next);
+    }
+
+    async function persistDeletedSeedIds(ids) {
+      try {
+        await writeIndexedDeletedSeedIds(ids);
+        return;
+      } catch {
+        // Keep a localStorage fallback for older/private browsers.
+      }
+      try {
+        localStorage.setItem(DELETED_SEEDS_KEY, JSON.stringify(ids));
+      } catch {
+        // A failed tombstone should not block deleting imported recipes.
+      }
+    }
+
+    async function persistLocalRecipes(items) {
+      try {
+        await writeIndexedRecipes(items);
+        return;
+      } catch {
+        // Older/private browsers may not expose IndexedDB; keep a localStorage fallback.
+      }
+
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+      } catch (error) {
+        throw new Error("本地保存失败：浏览器存储空间不足或被清理，请先导出菜谱备份");
+      }
+    }
+
+    function readLegacyLocalRecipes() {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (!stored) return null;
+        const parsed = JSON.parse(stored);
+        return Array.isArray(parsed) ? parsed : null;
+      } catch {
+        return null;
+      }
+    }
+
+    function openLocalDb() {
+      return new Promise((resolve, reject) => {
+        if (!window.indexedDB) {
+          reject(new Error("IndexedDB unavailable"));
+          return;
+        }
+        const request = indexedDB.open(LOCAL_DB_NAME, LOCAL_DB_VERSION);
+        request.onupgradeneeded = () => {
+          const db = request.result;
+          if (!db.objectStoreNames.contains(LOCAL_DB_STORE)) {
+            db.createObjectStore(LOCAL_DB_STORE, { keyPath: "key" });
+          }
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error || new Error("IndexedDB open failed"));
+      });
+    }
+
+    async function readIndexedRecipes() {
+      const db = await openLocalDb();
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction(LOCAL_DB_STORE, "readonly");
+        const store = transaction.objectStore(LOCAL_DB_STORE);
+        const request = store.get(LOCAL_DB_RECIPES_KEY);
+        request.onsuccess = () => {
+          const items = request.result?.items;
+          resolve(Array.isArray(items) ? items : null);
+        };
+        request.onerror = () => reject(request.error || new Error("IndexedDB read failed"));
+        transaction.oncomplete = () => db.close();
+        transaction.onerror = () => {
+          db.close();
+          reject(transaction.error || new Error("IndexedDB transaction failed"));
+        };
+      });
+    }
+
+    async function readIndexedDeletedSeedIds() {
+      const db = await openLocalDb();
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction(LOCAL_DB_STORE, "readonly");
+        const store = transaction.objectStore(LOCAL_DB_STORE);
+        const request = store.get(LOCAL_DB_DELETED_SEEDS_KEY);
+        request.onsuccess = () => {
+          const ids = request.result?.ids;
+          resolve(Array.isArray(ids) ? ids.filter((id) => typeof id === "string") : null);
+        };
+        request.onerror = () => reject(request.error || new Error("IndexedDB read failed"));
+        transaction.oncomplete = () => db.close();
+        transaction.onerror = () => {
+          db.close();
+          reject(transaction.error || new Error("IndexedDB transaction failed"));
+        };
+      });
+    }
+
+    async function writeIndexedRecipes(items) {
+      const db = await openLocalDb();
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction(LOCAL_DB_STORE, "readwrite");
+        const store = transaction.objectStore(LOCAL_DB_STORE);
+        store.put({ key: LOCAL_DB_RECIPES_KEY, items, updated_at: new Date().toISOString() });
+        transaction.oncomplete = () => {
+          db.close();
+          resolve();
+        };
+        transaction.onerror = () => {
+          db.close();
+          reject(transaction.error || new Error("IndexedDB write failed"));
+        };
+      });
+    }
+
+    async function writeIndexedDeletedSeedIds(ids) {
+      const db = await openLocalDb();
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction(LOCAL_DB_STORE, "readwrite");
+        const store = transaction.objectStore(LOCAL_DB_STORE);
+        store.put({ key: LOCAL_DB_DELETED_SEEDS_KEY, ids, updated_at: new Date().toISOString() });
+        transaction.oncomplete = () => {
+          db.close();
+          resolve();
+        };
+        transaction.onerror = () => {
+          db.close();
+          reject(transaction.error || new Error("IndexedDB write failed"));
+        };
+      });
+    }
+
+    async function parseRecipeFile(file) {
+      const text = await file.text();
+      const lowerName = file.name.toLowerCase();
+      const rows = lowerName.endsWith(".json")
+        ? parseRecipeJson(text)
+        : parseRecipeCsv(text);
+
+      return rows.map(normalizeUploadedRecipe).filter(Boolean);
+    }
+
+    function parseRecipeJson(text) {
+      const parsed = JSON.parse(text);
+      if (Array.isArray(parsed)) return parsed;
+      if (Array.isArray(parsed.recipes)) return parsed.recipes;
+      throw new Error("JSON 需要是数组，或包含 recipes 数组");
+    }
+
+    function parseRecipeCsv(text) {
+      const rows = parseCsvRows(text);
+      if (rows.length < 2) return [];
+      const headers = rows[0].map((header) => header.trim());
+      return rows.slice(1).map((row) => {
+        return headers.reduce((item, header, index) => {
+          item[header] = row[index] || "";
+          return item;
+        }, {});
+      });
+    }
+
+    function parseCsvRows(text) {
+      const rows = [];
+      let row = [];
+      let value = "";
+      let insideQuotes = false;
+
+      for (let index = 0; index < text.length; index += 1) {
+        const char = text[index];
+        const next = text[index + 1];
+
+        if (char === '"' && insideQuotes && next === '"') {
+          value += '"';
+          index += 1;
+        } else if (char === '"') {
+          insideQuotes = !insideQuotes;
+        } else if (char === "," && !insideQuotes) {
+          row.push(value);
+          value = "";
+        } else if ((char === "\n" || char === "\r") && !insideQuotes) {
+          if (char === "\r" && next === "\n") index += 1;
+          row.push(value);
+          if (row.some((cell) => cell.trim())) rows.push(row);
+          row = [];
+          value = "";
+        } else {
+          value += char;
+        }
+      }
+
+      row.push(value);
+      if (row.some((cell) => cell.trim())) rows.push(row);
+      return rows;
+    }
+
+    function normalizeUploadedRecipe(raw) {
+      const name = pickField(raw, ["name", "菜名", "名称", "title"]).trim();
+      const ingredients = pickField(raw, ["ingredients", "用料", "食材", "材料"]).trim();
+      const steps = pickField(raw, ["steps", "做法", "步骤", "method"]).trim();
+      const category = normalizeCategory(pickField(raw, ["category", "分类", "类型", "type"]));
+
+      if (!name || !ingredients || !steps || !category) return null;
+
+      return {
+        id: raw.id && isUuid(raw.id) ? raw.id : crypto.randomUUID(),
+        name,
+        category,
+        ingredients,
+        steps,
+        image_steps: normalizeImageSteps(raw.image_steps || raw.images || raw["图片步骤"])
+      };
+    }
+
+    function pickField(item, names) {
+      const key = names.find((name) => item[name] !== undefined);
+      return key ? String(item[key]) : "";
+    }
+
+    function normalizeCategory(value) {
+      const text = String(value || "").trim().toLowerCase();
+      const map = {
+        vegetable: "vegetable",
+        veg: "vegetable",
+        "蔬菜": "vegetable",
+        "素菜": "vegetable",
+        meat: "meat",
+        "肉菜": "meat",
+        "荤菜": "meat",
+        soup: "soup",
+        "汤": "soup",
+        "汤菜": "soup"
+      };
+      return map[text] || "";
+    }
+
+    function isUuid(value) {
+      return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+    }
+
+    function todayKey() {
+      const now = new Date();
+      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    }
+
+    function pickToday(force = false) {
+      const stored = loadDailySelection();
+      if (!force && stored.date === todayKey() && hasValidSelection(stored.selection)) {
+        return stored.selection;
+      }
+
+      return Object.keys(categories).reduce((selection, category) => {
+        const pool = recipes.filter((recipe) => recipe.category === category);
+        const currentId = stored.selection?.[category];
+        const choices = force && pool.length > 1
+          ? pool.filter((recipe) => recipe.id !== currentId)
+          : pool;
+        const index = force ? Math.floor(Math.random() * choices.length) : seededIndex(todayKey(), category, choices.length);
+        const picked = choices[index];
+        selection[category] = picked ? picked.id : null;
+        return selection;
+      }, {});
+    }
+
+    function loadDailySelection() {
+      try {
+        return JSON.parse(localStorage.getItem(DAILY_KEY)) || {};
+      } catch {
+        return {};
+      }
+    }
+
+    function saveDailySelection(selection) {
+      localStorage.setItem(DAILY_KEY, JSON.stringify({ date: todayKey(), selection }));
+    }
+
+    function hasValidSelection(selection) {
+      if (!selection) return false;
+      return Object.keys(categories).every((category) => {
+        if (selection[category] === null) return true;
+        return recipes.some((recipe) => recipe.id === selection[category] && recipe.category === category);
+      });
+    }
+
+    function pruneDailySelection() {
+      const selection = pickToday();
+      saveDailySelection(selection);
+    }
+
+    function randomizeToday() {
+      const before = loadDailySelection().selection || pickToday();
+      const selection = pickToday(true);
+      saveDailySelection(selection);
+      renderToday(selection);
+      const changed = Object.keys(categories).some((category) => before[category] !== selection[category]);
+      showMessage(changed ? "已重新抽取" : "每类至少需要两道菜才能换一组");
+    }
+
+    function renderToday(selection = null) {
+      const currentSelection = selection || pickToday();
+      saveDailySelection(currentSelection);
+      todayGrid.innerHTML = Object.entries(categories).map(([key, category]) => {
+        const recipe = recipes.find((item) => item.id === currentSelection[key]);
+        if (!recipe) {
+          return `
+            <article class="pick empty">
+              <span class="tag ${category.className}">${category.label}</span>
+              <h3>待添加</h3>
+              <p>这一类还没有菜谱。</p>
+            </article>
+          `;
+        }
+
+        return `
+          <article class="pick">
+            <span class="tag ${category.className}">${category.label}</span>
+            <h3>${escapeHtml(recipe.name)}</h3>
+            <p>${escapeHtml(recipe.ingredients)}</p>
+            <button class="ghost" type="button" data-edit="${recipe.id}">查看做法</button>
+          </article>
+        `;
+      }).join("");
+    }
+
+    function renderRecipes() {
+      const visibleRecipes = activeFilter === "all"
+        ? recipes
+        : recipes.filter((recipe) => recipe.category === activeFilter);
+
+      if (!visibleRecipes.length) {
+        recipeList.innerHTML = `<article class="recipe-card"><h3>暂无菜谱</h3><small>先在左侧记录一道菜。</small></article>`;
+        return;
+      }
+
+      recipeList.innerHTML = visibleRecipes.map((recipe) => `
+        <article class="recipe-card">
+          <span class="tag ${categories[recipe.category].className}">${categories[recipe.category].label}</span>
+          <h3>${escapeHtml(recipe.name)}</h3>
+          <small class="recipe-text">${escapeHtml(recipe.ingredients)}</small>
+          <small class="recipe-text">${escapeHtml(recipe.steps)}</small>
+          ${renderStepImages(recipe.image_steps)}
+          <div class="card-actions">
+            <button class="icon-button" type="button" data-edit="${recipe.id}" title="编辑" aria-label="编辑 ${escapeHtml(recipe.name)}">✎</button>
+            <button class="icon-button" type="button" data-delete="${recipe.id}" title="删除" aria-label="删除 ${escapeHtml(recipe.name)}">×</button>
+          </div>
+        </article>
+      `).join("");
+    }
+
+    function render() {
+      renderToday();
+      renderRecipes();
+    }
+
+    async function loadAndRender() {
+      storageChip.textContent = store.mode === "cloud" ? "共享云端" : "本地缓存";
+      storageChip.classList.toggle("cloud", store.mode === "cloud");
+      storageChip.classList.toggle("local", store.mode !== "cloud");
+      try {
+        recipes = await store.list();
+        render();
+      } catch (error) {
+        recipes = [];
+        render();
+        showMessage(error.message || "加载失败");
+      }
+    }
+
+    function editRecipe(id) {
+      const recipe = recipes.find((item) => item.id === id);
+      if (!recipe) return;
+      recipeId.value = recipe.id;
+      nameInput.value = recipe.name;
+      categoryInput.value = recipe.category;
+      ingredientsInput.value = recipe.ingredients;
+      stepsInput.value = recipe.steps;
+      currentImageSteps = normalizeImageSteps(recipe.image_steps);
+      renderImagePreview();
+      submitButton.textContent = "更新菜谱";
+      nameInput.focus();
+    }
+
+    function clearForm() {
+      recipeId.value = "";
+      form.reset();
+      currentImageSteps = [];
+      renderImagePreview();
+      submitButton.textContent = "保存菜谱";
+      showMessage("");
+    }
+
+    function renderImagePreview() {
+      imagePreview.innerHTML = currentImageSteps.map((src, index) => `
+        <div class="image-tile">
+          <img src="${src}" alt="步骤图 ${index + 1}">
+          <button type="button" data-remove-image="${index}" aria-label="删除步骤图 ${index + 1}">×</button>
+        </div>
+      `).join("");
+    }
+
+    function renderStepImages(images) {
+      const list = normalizeImageSteps(images).slice(0, 4);
+      if (!list.length) return "";
+      return `
+        <div class="step-images">
+          ${list.map((src, index) => `<img src="${src}" alt="步骤图 ${index + 1}">`).join("")}
+        </div>
+      `;
+    }
+
+    function normalizeImageSteps(value) {
+      if (Array.isArray(value)) return value.filter((item) => typeof item === "string" && item.startsWith("data:image/"));
+      if (typeof value === "string") {
+        try {
+          return normalizeImageSteps(JSON.parse(value));
+        } catch {
+          return value.startsWith("data:image/") ? [value] : [];
+        }
+      }
+      return [];
+    }
+
+    function readCompressedImage(file) {
+      if (!file.type.startsWith("image/")) return Promise.reject(new Error("只能上传图片文件"));
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error("图片读取失败"));
+        reader.onload = () => {
+          const img = new Image();
+          img.onerror = () => reject(new Error("图片解析失败"));
+          img.onload = () => {
+            const crop = getUploadCropRect(img);
+            const maxSize = 1200;
+            const ratio = Math.min(1, maxSize / Math.max(crop.width, crop.height));
+            const canvas = document.createElement("canvas");
+            canvas.width = Math.max(1, Math.round(crop.width * ratio));
+            canvas.height = Math.max(1, Math.round(crop.height * ratio));
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, crop.x, crop.y, crop.width, crop.height, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL("image/jpeg", 0.82));
+          };
+          img.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function getUploadCropRect(img) {
+      if (img.height / img.width < 1.7) {
+        return { x: 0, y: 0, width: img.width, height: img.height };
+      }
+
+      const scanWidth = 80;
+      const scanHeight = Math.max(1, Math.round(img.height * (scanWidth / img.width)));
+      const canvas = document.createElement("canvas");
+      canvas.width = scanWidth;
+      canvas.height = scanHeight;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, scanWidth, scanHeight);
+      const pixels = ctx.getImageData(0, 0, scanWidth, scanHeight).data;
+      const scores = [];
+
+      for (let y = 0; y < scanHeight; y += 1) {
+        let bright = 0;
+        for (let x = 0; x < scanWidth; x += 1) {
+          const index = (y * scanWidth + x) * 4;
+          const luminance = pixels[index] * 0.299 + pixels[index + 1] * 0.587 + pixels[index + 2] * 0.114;
+          if (luminance > 86) bright += 1;
+        }
+        scores.push(bright / scanWidth);
+      }
+
+      const top = findContentEdge(scores, 0, 1);
+      const bottom = findContentEdge(scores, scanHeight - 1, -1);
+      const cropY = Math.max(0, Math.floor((top / scanHeight) * img.height));
+      const cropBottom = Math.min(img.height, Math.ceil(((bottom + 1) / scanHeight) * img.height));
+      const cropHeight = cropBottom - cropY;
+      const removed = img.height - cropHeight;
+
+      if (removed < img.height * 0.15 || cropHeight < img.width * 0.8) {
+        return { x: 0, y: 0, width: img.width, height: img.height };
+      }
+      return { x: 0, y: cropY, width: img.width, height: cropHeight };
+    }
+
+    function findContentEdge(scores, start, step) {
+      let run = 0;
+      for (let index = start; index >= 0 && index < scores.length; index += step) {
+        run = scores[index] > 0.34 ? run + 1 : 0;
+        if (run >= 5) return step > 0 ? index - run + 1 : index;
+      }
+      return step > 0 ? 0 : scores.length - 1;
+    }
+
+    async function downloadTodayImage() {
+      const selected = getTodayRecipes();
+      if (!selected.length) {
+        showMessage("今天还没有可导出的菜谱");
+        return;
+      }
+
+      try {
+        const canvas = await drawTodayCanvas(selected);
+        canvas.toBlob((blob) => {
+          if (!blob) {
+            showMessage("长图生成失败");
+            return;
+          }
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = `今日菜谱-${todayKey()}.png`;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+          showMessage("长图已生成");
+        }, "image/png");
+      } catch (error) {
+        showMessage(error.message || "长图生成失败");
+      }
+    }
+
+    function exportRecipes() {
+      if (!recipes.length) {
+        showMessage("没有可导出的菜谱");
+        return;
+      }
+
+      const data = recipes.map((recipe) => ({
+        id: recipe.id,
+        name: recipe.name,
+        category: recipe.category,
+        ingredients: recipe.ingredients,
+        steps: recipe.steps,
+        image_steps: normalizeImageSteps(recipe.image_steps)
+      }));
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `菜谱备份-${todayKey()}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      showMessage("菜谱备份已导出");
+    }
+
+    function getTodayRecipes() {
+      const selection = loadDailySelection().selection || pickToday();
+      return Object.keys(categories)
+        .map((category) => {
+          const recipe = recipes.find((item) => item.id === selection[category]);
+          return recipe ? { ...recipe, category } : null;
+        })
+        .filter(Boolean);
+    }
+
+    async function drawTodayCanvas(selected) {
+      const width = 1080;
+      const margin = 54;
+      const contentWidth = width - margin * 2;
+      const blocks = [];
+      let height = 178;
+
+      for (const item of selected) {
+        const images = await Promise.all(normalizeImageSteps(item.image_steps).slice(0, 4).map(loadCanvasImage));
+        const imageLayout = getImageGridLayout(images, contentWidth - 48);
+        const textHeight = measureWrappedHeight(item.ingredients, 28, contentWidth - 40)
+          + measureWrappedHeight(item.steps, 28, contentWidth - 40)
+          + 268;
+        const imageHeight = imageLayout.height ? imageLayout.height + 18 : 0;
+        const blockHeight = textHeight + imageHeight;
+        blocks.push({ item, images, imageLayout, blockHeight });
+        height += blockHeight + 28;
+      }
+      height += 48;
+
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#f7f4ee";
+      ctx.fillRect(0, 0, width, height);
+      ctx.fillStyle = "#29231e";
+      ctx.font = "700 56px sans-serif";
+      ctx.fillText("今日菜谱", margin, 82);
+      ctx.font = "28px sans-serif";
+      ctx.fillStyle = "#756d63";
+      ctx.fillText(dateChip.textContent, margin, 126);
+
+      let y = 164;
+      blocks.forEach(({ item, images, imageLayout, blockHeight }) => {
+        drawRoundRect(ctx, margin, y, contentWidth, blockHeight, 18, "#fffdf8", "#ded5c8");
+        const tag = categories[item.category];
+        drawTag(ctx, tag.label, tag.className, margin + 24, y + 28);
+        ctx.fillStyle = "#29231e";
+        ctx.font = "700 40px sans-serif";
+        ctx.fillText(item.name, margin + 24, y + 116);
+        let textY = y + 160;
+        ctx.font = "700 26px sans-serif";
+        ctx.fillStyle = "#29231e";
+        ctx.fillText("用料", margin + 24, textY);
+        textY += 38;
+        ctx.font = "28px sans-serif";
+        ctx.fillStyle = "#756d63";
+        textY = drawWrappedText(ctx, item.ingredients, margin + 24, textY, contentWidth - 48, 38);
+        textY += 18;
+        ctx.font = "700 26px sans-serif";
+        ctx.fillStyle = "#29231e";
+        ctx.fillText("做法", margin + 24, textY);
+        textY += 38;
+        ctx.font = "28px sans-serif";
+        ctx.fillStyle = "#756d63";
+        textY = drawWrappedText(ctx, item.steps, margin + 24, textY, contentWidth - 48, 38);
+
+        if (images.length) {
+          images.forEach((image, index) => {
+            const slot = imageLayout.slots[index];
+            drawImageFrame(ctx, image, margin + 24 + slot.x, textY + 18 + slot.y, slot.width, slot.height);
+          });
+        }
+        y += blockHeight + 28;
+      });
+
+      return canvas;
+    }
+
+    function getImageGridLayout(images, maxWidth) {
+      if (!images.length) return { height: 0, slots: [] };
+      const gap = 18;
+      const columns = images.length === 1 ? 1 : 2;
+
+      if (images.length === 1) {
+        const image = images[0];
+        const fit = fitImageSize(image.width, image.height, maxWidth, 900);
+        return {
+          height: fit.height,
+          slots: [{ x: (maxWidth - fit.width) / 2, y: 0, width: fit.width, height: fit.height }]
+        };
+      }
+
+      const columnWidth = (maxWidth - gap) / columns;
+      const columnHeights = Array(columns).fill(0);
+      const slots = images.map((image) => {
+        const column = columnHeights[0] <= columnHeights[1] ? 0 : 1;
+        const fit = fitImageSize(image.width, image.height, columnWidth, 520);
+        const slot = {
+          x: column * (columnWidth + gap),
+          y: columnHeights[column],
+          width: fit.width,
+          height: fit.height
+        };
+        columnHeights[column] += fit.height + gap;
+        return slot;
+      });
+
+      return {
+        height: Math.max(...columnHeights) - gap,
+        slots
+      };
+    }
+
+    function fitImageSize(width, height, maxWidth, maxHeight) {
+      const scale = Math.min(1, maxWidth / width, maxHeight / height);
+      return {
+        width: Math.max(1, Math.round(width * scale)),
+        height: Math.max(1, Math.round(height * scale))
+      };
+    }
+
+    function loadCanvasImage(src) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error("步骤图加载失败"));
+        img.src = src;
+      });
+    }
+
+    function measureWrappedHeight(text, fontSize, maxWidth) {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      ctx.font = `${fontSize}px sans-serif`;
+      return wrapTextLines(ctx, text, maxWidth).length * 38;
+    }
+
+    function drawWrappedText(ctx, text, x, y, maxWidth, lineHeight) {
+      wrapTextLines(ctx, text, maxWidth).forEach((line) => {
+        ctx.fillText(line, x, y);
+        y += lineHeight;
+      });
+      return y;
+    }
+
+    function wrapTextLines(ctx, text, maxWidth) {
+      const lines = [];
+      String(text || "").split(/\n+/).forEach((paragraph) => {
+        let line = "";
+        Array.from(paragraph).forEach((char) => {
+          const next = line + char;
+          if (ctx.measureText(next).width > maxWidth && line) {
+            lines.push(line);
+            line = char;
+          } else {
+            line = next;
+          }
+        });
+        if (line) lines.push(line);
+      });
+      return lines.length ? lines : [""];
+    }
+
+    function drawRoundRect(ctx, x, y, width, height, radius, fill, stroke) {
+      ctx.beginPath();
+      roundedRectPath(ctx, x, y, width, height, radius);
+      ctx.fillStyle = fill;
+      ctx.fill();
+      ctx.strokeStyle = stroke;
+      ctx.stroke();
+    }
+
+    function drawTag(ctx, text, className, x, y) {
+      const colors = { vegetable: "#4d7d57", meat: "#a9493e", soup: "#476d87" };
+      ctx.font = "700 24px sans-serif";
+      const width = ctx.measureText(text).width + 36;
+      drawRoundRect(ctx, x, y, width, 42, 21, colors[className], colors[className]);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillText(text, x + 18, y + 29);
+    }
+
+    function drawCoverImage(ctx, img, x, y, width, height) {
+      const scale = Math.max(width / img.width, height / img.height);
+      const sourceWidth = width / scale;
+      const sourceHeight = height / scale;
+      const sourceX = (img.width - sourceWidth) / 2;
+      const sourceY = (img.height - sourceHeight) / 2;
+      ctx.save();
+      ctx.beginPath();
+      roundedRectPath(ctx, x, y, width, height, 14);
+      ctx.clip();
+      ctx.drawImage(img, sourceX, sourceY, sourceWidth, sourceHeight, x, y, width, height);
+      ctx.restore();
+    }
+
+    function drawImageFrame(ctx, img, x, y, width, height) {
+      ctx.save();
+      ctx.beginPath();
+      roundedRectPath(ctx, x, y, width, height, 14);
+      ctx.clip();
+      ctx.fillStyle = "#efe5d6";
+      ctx.fillRect(x, y, width, height);
+      ctx.drawImage(img, x, y, width, height);
+      ctx.restore();
+      ctx.strokeStyle = "#ded5c8";
+      ctx.beginPath();
+      roundedRectPath(ctx, x, y, width, height, 14);
+      ctx.stroke();
+    }
+
+    function roundedRectPath(ctx, x, y, width, height, radius) {
+      const r = Math.min(radius, width / 2, height / 2);
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + width - r, y);
+      ctx.quadraticCurveTo(x + width, y, x + width, y + r);
+      ctx.lineTo(x + width, y + height - r);
+      ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+      ctx.lineTo(x + r, y + height);
+      ctx.quadraticCurveTo(x, y + height, x, y + height - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    }
+
+    function showMessage(text) {
+      message.textContent = text;
+      if (!text) return;
+      window.clearTimeout(showMessage.timer);
+      showMessage.timer = window.setTimeout(() => {
+        message.textContent = "";
+      }, 1600);
+    }
+
+    function escapeHtml(value) {
+      return value.replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+      }[char]));
+    }
+
+    function seededIndex(date, category, length) {
+      if (!length) return 0;
+      const input = `${date}-${category}`;
+      let hash = 0;
+      for (let index = 0; index < input.length; index += 1) {
+        hash = ((hash << 5) - hash + input.charCodeAt(index)) | 0;
+      }
+      return Math.abs(hash) % length;
+    }
+
+    loadAndRender();
+    const channel = store.subscribe?.(() => loadAndRender());
+    window.addEventListener("beforeunload", () => {
+      if (channel && supabaseClient) supabaseClient.removeChannel(channel);
+    });
+  </script>
+</body>
+</html>
